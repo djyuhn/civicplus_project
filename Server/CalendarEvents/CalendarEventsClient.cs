@@ -83,6 +83,30 @@ public class CalendarEventsClient
         return events ?? throw new Exception("Failed to deserialize calendar events response");
     }
 
+    public async Task<CalendarEvent> UpsertCalendarEvent(CalendarEvent calendarEvent)
+    {
+        var accessToken = await GetAccessToken();
+
+        var json = JsonSerializer.Serialize(calendarEvent);
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/{_authCredentials.ClientId}/api/Events")
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.AccessToken);
+
+        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+        await using var responseContentStream = await response.Content.ReadAsStreamAsync();
+
+        var createdEvent = await JsonSerializer.DeserializeAsync<CalendarEvent>(
+            responseContentStream,
+            JsonSerializerOptions.Default
+        );
+
+
+        return createdEvent ?? throw new Exception("Failed to deserialize calendar event response");
+    }
+
     private async Task<AccessTokenData> FetchToken()
     {
         try
@@ -118,6 +142,5 @@ public class GetCalendarEventsResponse(
     IEnumerable<CalendarEvent> items)
 {
     [JsonPropertyName("total")] public long Total { get; } = total;
-
     [JsonPropertyName("items")] public IEnumerable<CalendarEvent> Items { get; } = items;
 }
