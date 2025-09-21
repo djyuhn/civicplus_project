@@ -43,6 +43,26 @@ public class CalendarEventsClient
         return _accessToken;
     }
 
+    public async Task<CalendarEvent> GetCalendarEvent(string id)
+    {
+        var accessToken = await GetAccessToken();
+
+        var requestUri = $"{_baseUrl}/{_authCredentials.ClientId}/api/Events/{id}";
+        var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.AccessToken);
+
+        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+        await using var responseContentStream = await response.Content.ReadAsStreamAsync();
+
+        var calendarEvent = await JsonSerializer.DeserializeAsync<CalendarEvent>(
+            responseContentStream,
+            JsonSerializerOptions.Default
+        );
+
+        return calendarEvent ?? throw new Exception("Failed to deserialize calendar events response");
+    }
+
     public async Task<GetCalendarEventsResponse> GetCalendarEvents(int from = 0, int size = 20)
     {
         var accessToken = await GetAccessToken();
