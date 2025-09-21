@@ -1,0 +1,16 @@
+﻿services:
+  server:
+    image: server
+    build:
+      context: ./Server
+      dockerfile: Dockerfile
+    ports:
+      - "5197:8080"
+  client:
+    image: client
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "5198:5198"
+
