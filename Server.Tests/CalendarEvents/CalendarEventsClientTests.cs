@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using System.Web;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
@@ -84,5 +85,80 @@ public class CalendarEventsClientTests : IDisposable
         var actual = await _calendarEventsClient.GetAccessToken();
 
         Assert.Equivalent(expectedToken, actual);
+    }
+
+    [Fact]
+    public async Task GivenGetEventsRequestWithFromAndSize_ShouldCallGetEventsEndpointAndReturnEvents()
+    {
+        var expectedAuth = new AuthCredentials(_clientId, _clientSecret);
+        var expectedAuthJson = JsonSerializer.Serialize(expectedAuth, JsonSerializerOptions.Default);
+
+        var expectedToken = new AccessTokenData("someToken", 123456);
+        var expectedAuthResp = JsonSerializer.Serialize(
+            expectedToken,
+            JsonSerializerOptions.Default
+        );
+
+        var expectedEvents = new GetCalendarEventsResponse(
+            1,
+            new List<CalendarEvent>
+            {
+                new(
+                    "someId",
+                    "someTitle",
+                    "someDescription",
+                    new DateTime(2025, 9, 20, 12, 00, 10, DateTimeKind.Utc),
+                    new DateTime(2025, 9, 20, 13, 00, 10, DateTimeKind.Utc)
+                )
+            });
+        var expectedEventsResponse = JsonSerializer.Serialize(
+            expectedEvents,
+            JsonSerializerOptions.Default
+        );
+
+        _mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Post &&
+                    req.RequestUri != null &&
+                    req.RequestUri.AbsoluteUri == $"{_baseUrl}/{_clientId}/api/Auth" &&
+                    req.Content != null &&
+                    req.Content.ReadAsStringAsync().Result == expectedAuthJson
+                ),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(expectedAuthResp, Encoding.UTF8, "application/json")
+            })
+            .Verifiable();
+
+        _mockHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.Is<HttpRequestMessage>(req =>
+                    req.Method == HttpMethod.Get &&
+                    req.RequestUri != null &&
+                    req.RequestUri.GetLeftPart(UriPartial.Path) == $"{_baseUrl}/{_clientId}/api/Events" &&
+                    req.Headers.Authorization != null &&
+                    req.Headers.Authorization.Scheme == "Bearer" &&
+                    req.Headers.Authorization.Parameter == expectedToken.AccessToken &&
+                    HttpUtility.ParseQueryString(req.RequestUri.Query)["$skip"] == "0" &&
+                    HttpUtility.ParseQueryString(req.RequestUri.Query)["$top"] == "20"
+                ),
+                ItExpr.IsAny<CancellationToken>()
+            )
+            .ReturnsAsync(new HttpResponseMessage
+            {
+                StatusCode = HttpStatusCode.OK,
+                Content = new StringContent(expectedEventsResponse, Encoding.UTF8, "application/json")
+            })
+            .Verifiable();
+
+        var actual = await _calendarEventsClient.GetCalendarEvents();
+
+        Assert.Equivalent(expectedEvents, actual);
     }
 }

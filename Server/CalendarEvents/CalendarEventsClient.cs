@@ -1,7 +1,7 @@
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Newtonsoft.Json;
-using JsonSerializer = System.Text.Json.JsonSerializer;
+using System.Text.Json.Serialization;
 
 namespace Server.CalendarEvents;
 
@@ -43,13 +43,33 @@ public class CalendarEventsClient
         return _accessToken;
     }
 
+    public async Task<GetCalendarEventsResponse> GetCalendarEvents(int from = 0, int size = 20)
+    {
+        var accessToken = await GetAccessToken();
+
+        var requestUri = $"{_baseUrl}/{_authCredentials.ClientId}/api/Events?$skip={from}&$top={size}";
+        var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.AccessToken);
+
+        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        response.EnsureSuccessStatusCode();
+        await using var responseContentStream = await response.Content.ReadAsStreamAsync();
+
+        var events = await JsonSerializer.DeserializeAsync<GetCalendarEventsResponse>(
+            responseContentStream,
+            JsonSerializerOptions.Default
+        );
+
+        return events ?? throw new Exception("Failed to deserialize calendar events response");
+    }
+
     private async Task<AccessTokenData> FetchToken()
     {
         try
         {
             await AccessTokenSemaphore.WaitAsync();
 
-            var json = JsonConvert.SerializeObject(_authCredentials);
+            var json = JsonSerializer.Serialize(_authCredentials);
             var request = new HttpRequestMessage(HttpMethod.Post, $"{_baseUrl}/{_authCredentials.ClientId}/api/Auth")
             {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")
@@ -71,4 +91,13 @@ public class CalendarEventsClient
             AccessTokenSemaphore.Release(1);
         }
     }
+}
+
+public class GetCalendarEventsResponse(
+    long total,
+    IEnumerable<CalendarEvent> items)
+{
+    [JsonPropertyName("total")] public long Total { get; } = total;
+
+    [JsonPropertyName("items")] public IEnumerable<CalendarEvent> Items { get; } = items;
 }
