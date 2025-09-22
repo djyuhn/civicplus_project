@@ -1,6 +1,20 @@
-@Server_HostAddress = http://localhost:5197
-
-GET {{Server_HostAddress}}/weatherforecast/
+### Send GET request for calendar events
+GET {{HostAddress}}:{{HostPort}}/api/Events
 Accept: application/json
 
-###
+### Send POST request with calendar event json body
+POST {{HostAddress}}:{{HostPort}}/api/Events
+Content-Type: application/json
+
+{
+  "id": "someId",
+  "title": "someTitle",
+  "description": "someDescription",
+  "startDate": "2025-09-21T15:01:56.384Z",
+  "endDate": "2025-09-21T16:01:56.384Z"
+}
+
+### Send GET request with calendar ID for calendar event
+GET {{HostAddress}}:{{HostPort}}/api/Events/faa4977b-85a5-479e-b21b-62870383dc6e
+Accept: application/json
+
