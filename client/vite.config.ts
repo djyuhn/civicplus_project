@@ -1,5 +1,6 @@
 import { configDefaults, defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react-swc'
+import config from './config.json'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -7,7 +8,7 @@ export default defineConfig({
   server: {
     host: true,
     strictPort: true,
-    port: 5198,
+    port: config.vitePort,
   },
   test: {
     globals: true,

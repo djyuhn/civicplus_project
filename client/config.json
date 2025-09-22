@@ -1,4 +1,5 @@
 {
-  "calendarEventApiUrl": "https://localhost",
-  "calendarEventApiPort": 5197
+  "calendarEventApiUrl": "http://localhost",
+  "calendarEventApiPort": 5197,
+  "vitePort": 5198
 }
