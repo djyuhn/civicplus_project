@@ -5,6 +5,8 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{69429AF9-2396-457D-8D5E-AD5851722D76}"
 	ProjectSection(SolutionItems) = preProject
 		compose.yaml = compose.yaml
+		Makefile = Makefile
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server.Tests", "Server.Tests\Server.Tests.csproj", "{820CC1FB-4230-42A0-A558-A1DE9D109D86}"

@@ -4,6 +4,12 @@
     build:
       context: ./Server
       dockerfile: Dockerfile
+      target: "base"
+    entrypoint:
+      - "dotnet"
+      - "/app/bin/Debug/net9.0/Server.dll"
+    volumes:
+      - "./Server:/app:rw"
     ports:
       - "5197:8080"
   client:
